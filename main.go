@@ -51,6 +51,8 @@ func locks(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	registeredLocks = make([]Lock, 0)
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", root).Methods(http.MethodGet)
 	r.HandleFunc("/locks", locks).Methods(http.MethodGet)
