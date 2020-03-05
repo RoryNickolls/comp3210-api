@@ -10,10 +10,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var registeredLocks map[string]Lock
+var registeredLocks []Lock
 
 type Lock struct {
-	ID       int
 	Serial   string
 	Password string
 }
@@ -33,15 +32,16 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := len(registeredLocks) + 1
-	l := Lock{id, Data.Serial, "open sesame"}
-	registeredLocks[strconv.Itoa(id)] = l
+	l := Lock{Data.Serial, "open sesame"}
+	registeredLocks = append(registeredLocks, l)
 	json.NewEncoder(w).Encode(l)
 }
 
 func access(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	l := registeredLocks[params["id"]]
+
+	i, _ := strconv.Atoi(params["id"])
+	l := registeredLocks[i]
 	json.NewEncoder(w).Encode(l)
 }
 
@@ -51,8 +51,6 @@ func locks(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	registeredLocks = make(map[string]Lock)
-
 	r := mux.NewRouter()
 	r.HandleFunc("/", root).Methods(http.MethodGet)
 	r.HandleFunc("/locks", locks).Methods(http.MethodGet)
