@@ -58,5 +58,5 @@ func main() {
 	r.HandleFunc("/locks", locks).Methods(http.MethodGet)
 	r.HandleFunc("/locks/{id}/access", access).Methods(http.MethodGet)
 	r.HandleFunc("/locks", register).Methods(http.MethodPost)
-	log.Fatal(http.ListenAndServe("192.168.0.31:8080", r))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
