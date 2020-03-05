@@ -13,6 +13,7 @@ import (
 var registeredLocks []Lock
 
 type Lock struct {
+	Name     string
 	Serial   string
 	Password string
 }
@@ -23,6 +24,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 func register(w http.ResponseWriter, r *http.Request) {
 	var Data struct {
+		Name   string
 		Serial string
 	}
 
@@ -32,7 +34,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l := Lock{Data.Serial, "open sesame"}
+	l := Lock{Data.Name, Data.Serial, "open sesame"}
 	registeredLocks = append(registeredLocks, l)
 	json.NewEncoder(w).Encode(l)
 }
