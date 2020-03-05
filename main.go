@@ -13,13 +13,13 @@ import (
 var registeredLocks map[string]Lock
 
 type Lock struct {
-	ID              int
-	EncryptedSerial string
+	ID       int
+	Serial   string
+	Password string
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`Hello World`))
 }
 
 func register(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +34,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := len(registeredLocks) + 1
-	l := Lock{id, Data.Serial + "ENC"}
+	l := Lock{id, Data.Serial, "open sesame"}
 	registeredLocks[strconv.Itoa(id)] = l
 	json.NewEncoder(w).Encode(l)
 }
@@ -58,5 +58,5 @@ func main() {
 	r.HandleFunc("/locks", locks).Methods(http.MethodGet)
 	r.HandleFunc("/locks/{id}/access", access).Methods(http.MethodGet)
 	r.HandleFunc("/locks", register).Methods(http.MethodPost)
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe("192.168.0.31:8080", r))
 }
