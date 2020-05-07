@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -61,10 +61,16 @@ func register(w http.ResponseWriter, r *http.Request) {
 // Request access to a lock
 func access(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	serial := params["serial"]
 
-	i, _ := strconv.Atoi(params["id"])
-	l := registeredLocks[i]
-	json.NewEncoder(w).Encode(l)
+	user := r.FormValue("user")
+
+	lock, err := get_lock(serial)
+	if err == nil {
+		if lock.Owner == user {
+			json.NewEncoder(w).Encode(lock)
+		}
+	}
 }
 
 // Get the list of registered locks
@@ -85,17 +91,27 @@ func locks(w http.ResponseWriter, r *http.Request) {
 func lock_by_serial(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	serial := r.FormValue("serial")
+	params := mux.Vars(r)
+	serial := params["serial"]
 
+	lock, err := get_lock(serial)
+
+	if err == nil {
+		temp := lock.Password
+		lock.Password = ""
+		json.NewEncoder(w).Encode(lock)
+		lock.Password = temp
+	}
+}
+
+func get_lock(serial string) (*Lock, error) {
 	for _, lock := range registeredLocks {
 		if lock.Serial == serial {
-			temp := lock.Password
-			lock.Password = ""
-			json.NewEncoder(w).Encode(lock)
-			lock.Password = temp
-			return
+			return &lock, nil
 		}
 	}
+
+	return &Lock{}, errors.New("No lock exists by that serial")
 }
 
 func main() {
@@ -104,9 +120,9 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", root).Methods(http.MethodGet)
 	r.HandleFunc("/locks", locks).Queries("user", "{user}").Methods(http.MethodGet)
-	r.HandleFunc("/locks/{id}/access", access).Methods(http.MethodGet)
 	r.HandleFunc("/locks", register).Methods(http.MethodPost)
-	r.HandleFunc("/lock", lock_by_serial).Queries("serial", "{serial}").Methods(http.MethodGet)
+	r.HandleFunc("/locks/{serial}/access", access).Queries("user", "{user}").Methods(http.MethodGet)
+	r.HandleFunc("/locks/{serial}", lock_by_serial).Methods(http.MethodGet)
 	//log.Fatal(http.ListenAndServeTLS(":8080", "cert.crt", "key.key", r))
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
