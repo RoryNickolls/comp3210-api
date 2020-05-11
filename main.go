@@ -2,7 +2,12 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"log"
@@ -32,6 +37,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		User   string
 		Name   string
 		Serial string
+		Key    string
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&Data)
@@ -40,20 +46,39 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bytes, err := base64.StdEncoding.DecodeString(Data.Key)
+	if err != nil {
+		fmt.Println(err)
+	}
+	pem, _ := pem.Decode(bytes)
+	if pem == nil {
+		fmt.Println("Error decoding pem block")
+	}
+	key, err := x509.ParsePKCS1PublicKey(pem.Bytes)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// Create a cryptographically random password
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
 		"abcdefghijklmnopqrstuvwxyz" +
 		"0123456789")
 	charsLen := big.NewInt(int64(len(chars)))
-	length := 32
+	length := 16
 	var b strings.Builder
 	for i := 0; i < length; i++ {
 		pos, _ := rand.Int(rand.Reader, charsLen)
 		b.WriteRune(chars[pos.Int64()])
 	}
+	pwd := b.String()
+	encPwdBytes, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, key, []byte(pwd), []byte("pwd"))
+	if err != nil {
+		fmt.Println("Encryption error", err)
+	}
+	encPwdStr := base64.StdEncoding.EncodeToString(encPwdBytes)
 
 	// Create a lock with the given data and generated password
-	l := Lock{Data.User, Data.Name, Data.Serial, b.String()}
+	l := Lock{Data.User, Data.Name, Data.Serial, encPwdStr}
 	registeredLocks = append(registeredLocks, l)
 	json.NewEncoder(w).Encode(l)
 }
