@@ -148,6 +148,6 @@ func main() {
 	r.HandleFunc("/locks", register).Methods(http.MethodPost)
 	r.HandleFunc("/locks/{serial}/access", access).Queries("user", "{user}").Methods(http.MethodGet)
 	r.HandleFunc("/locks/{serial}", lock_by_serial).Methods(http.MethodGet)
-	//log.Fatal(http.ListenAndServeTLS(":8080", "cert.crt", "key.key", r))
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServeTLS(":8080", "https-server.crt", "https-server.key", r))
+	//log.Fatal(http.ListenAndServe(":8080", r))
 }
