@@ -1,1 +1,1 @@
-COMP3210 RESTful API
+REST API for registering, accessing and changing the state of Bluetooth locks.
